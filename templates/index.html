@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reclame Aqui | J&T Express</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand-area">
+        <div class="brand-logos">
+          <img src="{{ url_for('static', filename='assets/jt-express.png') }}" alt="J&T Express" class="logo jt-logo">
+          <span class="brand-divider"></span>
+          <img src="{{ url_for('static', filename='assets/reclame-aqui.png') }}" alt="Reclame Aqui" class="logo ra-logo">
+        </div>
+        <div class="title-wrap">
+          <h1 data-i18n="title">Painel Reclame Aqui</h1>
+          <p data-i18n="subtitle">Gestão de reclamações, tratativas, SLA e performance por RM</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="sync-badge" id="syncBadge">
+          <span class="sync-dot"></span>
+          <span data-i18n="sync">Sincronizado</span>
+        </div>
+        <button class="lang-toggle" id="langToggle" type="button" aria-label="Alterar idioma">
+          <span id="langPt" class="active">PT-BR</span>
+          <span class="lang-sep">/</span>
+          <span id="langZh">简体中文</span>
+        </button>
+      </div>
+    </header>
+
+    <nav class="tabs" aria-label="Navegação principal">
+      <button class="tab active" data-tab="overview" data-i18n="tabOverview">Visão Geral</button>
+      <button class="tab" data-tab="ranking" data-i18n="tabRanking">Ranking por RM</button>
+      <button class="tab" data-tab="editor" data-i18n="tabEditor">Editar Base</button>
+    </nav>
+
+    <main>
+      <section id="overview" class="tab-panel active">
+        <div class="filter-card">
+          <div class="filter-group regional-group">
+            <span class="filter-label" data-i18n="regional">Regional</span>
+            <div class="segmented" id="regionalSegments">
+              <button class="seg active" data-value="TODOS" data-i18n="all">Todos</button>
+              <button class="seg" data-value="MG">MG</button>
+              <button class="seg" data-value="SPN">SPN</button>
+            </div>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label" for="rmFilter" data-i18n="rm">RM</label>
+            <select id="rmFilter"><option value="" data-i18n="allRms">Todos os RMs</option></select>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label" for="startDate" data-i18n="startDate">Data inicial</label>
+            <input type="date" id="startDate">
+          </div>
+          <div class="filter-group">
+            <label class="filter-label" for="endDate" data-i18n="endDate">Data final</label>
+            <input type="date" id="endDate">
+          </div>
+          <button class="btn btn-ghost" id="clearFilters" data-i18n="clear">Limpar filtros</button>
+        </div>
+
+        <div class="kpi-grid">
+          <article class="kpi-card">
+            <span class="kpi-label" data-i18n="totalComplaints">Total de reclamações</span>
+            <strong id="kpiTotal">0</strong>
+            <span class="kpi-foot" data-i18n="currentFilter">no filtro atual</span>
+          </article>
+          <article class="kpi-card emphasis">
+            <span class="kpi-label" data-i18n="openOrders">Pedidos em aberto</span>
+            <strong id="kpiOpen">0</strong>
+            <span class="kpi-foot" data-i18n="openRule">Solução vazia ou “EM ABERTO”</span>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-label" data-i18n="ownBases">Bases próprias</span>
+            <strong id="kpiOwn">0</strong>
+            <span class="kpi-foot" data-i18n="ownRule">Base sem prefixo “F ”</span>
+          </article>
+          <article class="kpi-card franchise">
+            <span class="kpi-label" data-i18n="franchises">Franquias</span>
+            <strong id="kpiFranchise">0</strong>
+            <span class="kpi-foot" data-i18n="franchiseRule">Base iniciada por “F ”</span>
+          </article>
+          <article class="kpi-card good">
+            <span class="kpi-label" data-i18n="within24">Dentro de 24h</span>
+            <strong id="kpiWithin">0</strong>
+            <span class="kpi-foot" data-i18n="autoSla">SLA automático</span>
+          </article>
+          <article class="kpi-card danger">
+            <span class="kpi-label" data-i18n="over24">Fora de 24h</span>
+            <strong id="kpiOverdue">0</strong>
+            <span class="kpi-foot" data-i18n="complaintDateRule">pela data da reclamação</span>
+          </article>
+        </div>
+
+        <div class="dashboard-grid two-cols">
+          <article class="panel">
+            <div class="panel-head">
+              <div>
+                <h2 data-i18n="openByRm">Pedidos em aberto por RM</h2>
+                <p data-i18n="openByRmSub">Separação entre base própria, franquia e SLA de 24h</p>
+              </div>
+            </div>
+            <div class="table-wrap compact-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>RM</th>
+                    <th data-i18n="open">Aberto</th>
+                    <th data-i18n="own">Própria</th>
+                    <th data-i18n="franchise">Franquia</th>
+                    <th data-i18n="within">Dentro</th>
+                    <th data-i18n="outside">Fora</th>
+                  </tr>
+                </thead>
+                <tbody id="openByRmBody"></tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-head">
+              <div>
+                <h2 data-i18n="reasons">Motivos</h2>
+                <p data-i18n="reasonsSub">Distribuição das reclamações no filtro atual</p>
+              </div>
+            </div>
+            <div id="reasonBars" class="bar-list"></div>
+          </article>
+        </div>
+
+        <div class="dashboard-grid two-cols">
+          <article class="panel">
+            <div class="panel-head">
+              <div>
+                <h2 data-i18n="baseComposition">Composição das bases</h2>
+                <p data-i18n="baseCompositionSub">Classificação automática pelo nome da base</p>
+              </div>
+            </div>
+            <div id="baseBars" class="big-bars"></div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-head">
+              <div>
+                <h2 data-i18n="slaRuleTitle">Regra de SLA</h2>
+                <p data-i18n="slaRuleSub">O dashboard calcula automaticamente o prazo</p>
+              </div>
+            </div>
+            <div class="sla-explainer">
+              <div class="sla-item good-box"><strong>≤ 24h</strong><span data-i18n="withinDeadline">Dentro do prazo</span></div>
+              <div class="sla-arrow">→</div>
+              <div class="sla-item bad-box"><strong>&gt; 24h</strong><span data-i18n="outsideDeadline">Fora do prazo</span></div>
+            </div>
+            <p class="note" data-i18n="manualDeadlineNote">A coluna “DENTRO DO PRAZO” continua editável manualmente na aba Editar Base, mas o ranking usa o SLA automático de 24h.</p>
+          </article>
+        </div>
+
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <h2 data-i18n="recentRecords">Registros mais recentes</h2>
+              <p data-i18n="recentRecordsSub">Últimas reclamações conforme os filtros selecionados</p>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th data-i18n="date">Data</th><th>ID RA</th><th data-i18n="regional">Regional</th><th data-i18n="base">Base</th><th>RM</th><th data-i18n="reason">Motivo</th><th data-i18n="solution">Solução</th><th>SLA 24h</th>
+              </tr></thead>
+              <tbody id="recentBody"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section id="ranking" class="tab-panel">
+        <div class="filter-card">
+          <div class="filter-group regional-group">
+            <span class="filter-label" data-i18n="regional">Regional</span>
+            <div class="segmented" id="rankingRegionalSegments">
+              <button class="seg active" data-value="TODOS" data-i18n="all">Todos</button>
+              <button class="seg" data-value="MG">MG</button>
+              <button class="seg" data-value="SPN">SPN</button>
+            </div>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label" for="rankingRmFilter" data-i18n="rm">RM</label>
+            <select id="rankingRmFilter"><option value="" data-i18n="allRms">Todos os RMs</option></select>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label" for="rankingStartDate" data-i18n="startDate">Data inicial</label>
+            <input type="date" id="rankingStartDate">
+          </div>
+          <div class="filter-group">
+            <label class="filter-label" for="rankingEndDate" data-i18n="endDate">Data final</label>
+            <input type="date" id="rankingEndDate">
+          </div>
+          <button class="btn btn-ghost" id="rankingClearFilters" data-i18n="clear">Limpar filtros</button>
+        </div>
+        <div class="panel ranking-panel">
+          <div class="panel-head ranking-head">
+            <div>
+              <h2 data-i18n="rankingTitle">Ranking por RM × Motivo</h2>
+              <p data-i18n="rankingSub">Cada motivo vira uma coluna. O ranking também mostra composição e SLA.</p>
+            </div>
+            <label class="switch-line">
+              <input type="checkbox" id="rankingOnlyOpen">
+              <span data-i18n="onlyOpen">Somente pedidos em aberto</span>
+            </label>
+          </div>
+          <div class="table-wrap ranking-scroll">
+            <table id="rankingTable">
+              <thead id="rankingHead"></thead>
+              <tbody id="rankingBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="editor" class="tab-panel">
+        <div class="editor-top panel">
+          <div class="panel-head editor-heading">
+            <div>
+              <h2 data-i18n="editorTitle">Editar base de dados</h2>
+              <p data-i18n="editorSub">Edite, salve, importe ou exporte. Alterações salvas aparecem para todos os usuários.</p>
+            </div>
+            <div class="editor-actions">
+              <label class="btn btn-secondary upload-btn">
+                <input type="file" id="xlsxUpload" accept=".xlsx" hidden>
+                <span data-i18n="importXlsx">Importar XLSX</span>
+              </label>
+              <a class="btn btn-ghost" href="/api/export" data-i18n="exportXlsx">Exportar XLSX</a>
+              <button class="btn btn-primary" id="addRowBtn" data-i18n="addRow">+ Novo registro</button>
+            </div>
+          </div>
+
+          <div class="editor-filters">
+            <input type="search" id="editorSearch" placeholder="Buscar ID, rastreio, base, RM, motivo..." data-i18n-placeholder="searchPlaceholder">
+            <select id="editorRegional"><option value="TODOS" data-i18n="allRegions">Todas as regionais</option><option>MG</option><option>SPN</option></select>
+            <select id="editorRm"><option value="" data-i18n="allRms">Todos os RMs</option></select>
+            <select id="editorBaseType"><option value="" data-i18n="allBaseTypes">Todos os tipos</option><option value="BASE PRÓPRIA" data-i18n="ownBase">Base própria</option><option value="FRANQUIA" data-i18n="franchise">Franquia</option></select>
+            <span class="row-count" id="editorCount">0</span>
+          </div>
+        </div>
+
+        <div class="panel editor-table-panel">
+          <div class="table-wrap editor-scroll">
+            <table class="editor-table">
+              <thead><tr>
+                <th>ID RA</th><th data-i18n="complaintDate">Data reclamação</th><th data-i18n="regional">Regional</th><th data-i18n="owner">Responsável</th><th data-i18n="tracking">Rastreio</th><th data-i18n="driver">Motorista</th><th data-i18n="base">Base</th><th data-i18n="baseType">Tipo</th><th>RM</th><th data-i18n="directedDate">Data direcionamento</th><th data-i18n="reason">Motivo</th><th data-i18n="solution">Solução</th><th data-i18n="manualDeadline">Prazo manual</th><th>SLA 24h</th><th data-i18n="treatment">Tratativa</th><th data-i18n="observation">Observação</th><th data-i18n="actions">Ações</th>
+              </tr></thead>
+              <tbody id="editorBody"></tbody>
+            </table>
+          </div>
+          <div class="pagination">
+            <button class="btn btn-ghost" id="prevPage" data-i18n="previous">Anterior</button>
+            <span id="pageInfo">1 / 1</span>
+            <button class="btn btn-ghost" id="nextPage" data-i18n="next">Próxima</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <dialog id="addDialog" class="modal">
+    <form method="dialog" id="addForm">
+      <div class="modal-head">
+        <h3 data-i18n="newRecord">Novo registro</h3>
+        <button class="icon-btn" value="cancel" type="submit">×</button>
+      </div>
+      <div class="modal-grid">
+        <label>ID RA<input name="ra_id"></label>
+        <label data-i18n-label="complaintDate">Data reclamação<input name="complaint_date" type="datetime-local"></label>
+        <label data-i18n-label="regional">Regional<select name="regional"><option>MG</option><option>SPN</option></select></label>
+        <label data-i18n-label="owner">Responsável<input name="owner"></label>
+        <label data-i18n-label="tracking">Rastreio<input name="tracking"></label>
+        <label data-i18n-label="driver">Motorista<input name="driver"></label>
+        <label data-i18n-label="base">Base<input name="base" placeholder="Ex.: BHZ 01-MG ou F XXX-MG"></label>
+        <label>RM<input name="rm"></label>
+        <label data-i18n-label="directedDate">Data direcionamento<input name="directed_date" type="datetime-local"></label>
+        <label data-i18n-label="reason">Motivo<input name="reason" list="reasonList"></label>
+        <label data-i18n-label="solution">Solução<input name="solution" list="solutionList"></label>
+        <label data-i18n-label="manualDeadline">Prazo manual<select name="deadline_manual"><option value=""></option><option value="DENTRO DO PRAZO">DENTRO DO PRAZO</option><option value="FORA DO PRAZO">FORA DO PRAZO</option></select></label>
+        <label class="span-2" data-i18n-label="treatment">Tratativa<textarea name="treatment" rows="3"></textarea></label>
+        <label class="span-2" data-i18n-label="observation">Observação<textarea name="observation" rows="3"></textarea></label>
+      </div>
+      <div class="modal-actions">
+        <button value="cancel" class="btn btn-ghost" type="submit" data-i18n="cancel">Cancelar</button>
+        <button id="createRowSubmit" class="btn btn-primary" type="button" data-i18n="save">Salvar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <datalist id="reasonList"></datalist>
+  <datalist id="solutionList"></datalist>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
